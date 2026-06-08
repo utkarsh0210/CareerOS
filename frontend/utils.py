@@ -2,14 +2,19 @@ import requests
 import streamlit as st
 
 BASE_URL = "http://localhost:8000"
+API_BASE_URL = "https://careeros-ls09.onrender.com"
+
 
 
 def api_post(endpoint: str, payload: dict) -> dict | None:
     """POST to FastAPI, return JSON or show error."""
     try:
-        resp = requests.post(f"{BASE_URL}{endpoint}", json=payload, timeout=60)
-        resp.raise_for_status()
-        return resp.json()
+        response = requests.post(
+            f"{API_BASE_URL}/analyze",
+            json=payload
+        )
+        response.raise_for_status()
+        return response.json()
     except requests.exceptions.ConnectionError:
         st.error("⚠️ Cannot connect to backend. Run: `uvicorn backend.main:app --reload`")
     except requests.exceptions.HTTPError as e:

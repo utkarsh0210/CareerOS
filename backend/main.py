@@ -4,7 +4,7 @@ from backend.routes import analyzer, tailor, network, interview, tracker
 
 app = FastAPI(
     title="CareerOS API",
-    description="AI-powered career assistant — MVP using Gemini 1.5 Flash (free tier)",
+    description="AI-powered career assistant — MVP using Gemini 2.5 Flash (free tier)",
     version="1.0.0",
 )
 
@@ -25,4 +25,4 @@ app.include_router(tracker.router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "gemini-1.5-flash"}
+    return {"status": "ok", "model": "gemini-2.5-flash"}

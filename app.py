@@ -33,7 +33,7 @@ with st.sidebar:
             st.session_state.page = key
 
     st.divider()
-    st.caption("Powered by **Gemini 1.5 Flash** (free tier)")
+    st.caption("Powered by **Gemini 2.5 Flash** (free tier)")
     st.caption("Backend: FastAPI · Frontend: Streamlit")
 
 # ── Route to page ──
