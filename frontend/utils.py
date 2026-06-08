@@ -1,7 +1,7 @@
 import requests
 import streamlit as st
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://careeros-ls09.onrender.com"
 API_BASE_URL = "https://careeros-ls09.onrender.com"
 
 
