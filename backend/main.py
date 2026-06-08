@@ -26,3 +26,7 @@ app.include_router(tracker.router)
 @app.get("/health")
 def health():
     return {"status": "ok", "model": "gemini-2.5-flash"}
+
+@app.get("/")
+def root():
+    return {"status": "ok"}
