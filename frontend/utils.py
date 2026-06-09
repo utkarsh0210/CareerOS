@@ -1,7 +1,6 @@
 import requests
 import streamlit as st
 
-BASE_URL = "https://careeros-ls09.onrender.com"
 API_BASE_URL = "https://careeros-ls09.onrender.com"
 
 
@@ -26,9 +25,9 @@ def api_post(endpoint: str, payload: dict) -> dict | None:
 
 def api_get(endpoint: str) -> list | dict | None:
     try:
-        resp = requests.get(f"{BASE_URL}{endpoint}", timeout=30)
-        resp.raise_for_status()
-        return resp.json()
+        response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=30)
+        response.raise_for_status()
+        return response.json()
     except requests.exceptions.ConnectionError:
         st.error("⚠️ Cannot connect to backend. Run: `uvicorn backend.main:app --reload`")
     except Exception as e:
@@ -38,7 +37,7 @@ def api_get(endpoint: str) -> list | dict | None:
 
 def api_patch(endpoint: str, payload: dict) -> dict | None:
     try:
-        resp = requests.patch(f"{BASE_URL}{endpoint}", json=payload, timeout=30)
+        resp = requests.patch(f"{API_BASE_URL}{endpoint}", json=payload, timeout=30)
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
@@ -48,7 +47,7 @@ def api_patch(endpoint: str, payload: dict) -> dict | None:
 
 def api_delete(endpoint: str) -> bool:
     try:
-        resp = requests.delete(f"{BASE_URL}{endpoint}", timeout=30)
+        resp = requests.delete(f"{API_BASE_URL}{endpoint}", timeout=30)
         resp.raise_for_status()
         return True
     except Exception as e:
