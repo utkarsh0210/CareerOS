@@ -1,57 +1,83 @@
 import requests
 import streamlit as st
 
-API_BASE_URL = "https://careeros-ls09.onrender.com"
+BASE_URL = "https://careeros-ls09.onrender.com"
 
+def _extract_user_message(response: requests.Response) -> str:
+    """
+    Pull `user_message` from a CareerOS error JSON response.
+    Falls back to a generic message if the shape is unexpected.
+    """
+    try:
+        body = response.json()
+        # CareerOS errors return {user_message, error_code, detail}
+        return body.get("user_message") or body.get("detail") or "An error occurred. Please try again."
+    except Exception:
+        return f"Server error ({response.status_code}). Please try again."
 
 
 def api_post(endpoint: str, payload: dict) -> dict | None:
-    """POST to FastAPI, return JSON or show error."""
     try:
-        response = requests.post(
-            f"{API_BASE_URL}/analyze",
-            json=payload
-        )
-        response.raise_for_status()
-        return response.json()
+        resp = requests.post(f"{BASE_URL}{endpoint}", json=payload, timeout=60)
+        resp.raise_for_status()
+        return resp.json()
     except requests.exceptions.ConnectionError:
-        st.error("⚠️ Cannot connect to backend. Run: `uvicorn backend.main:app --reload`")
+        st.error(
+            "⚠️ Cannot reach the backend server. "
+            "Make sure it's running: `uvicorn backend.main:app --reload`"
+        )
+    except requests.exceptions.Timeout:
+        st.error(
+            "⏱️ The request timed out — the AI is taking too long. "
+            "Please try again."
+        )
     except requests.exceptions.HTTPError as e:
-        st.error(f"API error {e.response.status_code}: {e.response.text}")
-    except Exception as e:
-        st.error(f"Unexpected error: {e}")
+        st.error(_extract_user_message(e.response))
+    except Exception:
+        st.error("Something went wrong. Please try again in a moment.")
     return None
 
 
 def api_get(endpoint: str) -> list | dict | None:
     try:
-        response = requests.get(f"{API_BASE_URL}{endpoint}", timeout=30)
-        response.raise_for_status()
-        return response.json()
+        resp = requests.get(f"{BASE_URL}{endpoint}", timeout=30)
+        resp.raise_for_status()
+        return resp.json()
     except requests.exceptions.ConnectionError:
-        st.error("⚠️ Cannot connect to backend. Run: `uvicorn backend.main:app --reload`")
-    except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(
+            "⚠️ Cannot reach the backend server. "
+            "Make sure it's running: `uvicorn backend.main:app --reload`"
+        )
+    except requests.exceptions.Timeout:
+        st.error("⏱️ The request timed out. Please try again.")
+    except requests.exceptions.HTTPError as e:
+        st.error(_extract_user_message(e.response))
+    except Exception:
+        st.error("Something went wrong. Please try again in a moment.")
     return None
 
 
 def api_patch(endpoint: str, payload: dict) -> dict | None:
     try:
-        resp = requests.patch(f"{API_BASE_URL}{endpoint}", json=payload, timeout=30)
+        resp = requests.patch(f"{BASE_URL}{endpoint}", json=payload, timeout=30)
         resp.raise_for_status()
         return resp.json()
-    except Exception as e:
-        st.error(f"Error: {e}")
+    except requests.exceptions.HTTPError as e:
+        st.error(_extract_user_message(e.response))
+    except Exception:
+        st.error("Something went wrong. Please try again in a moment.")
     return None
 
 
 def api_delete(endpoint: str) -> bool:
     try:
-        resp = requests.delete(f"{API_BASE_URL}{endpoint}", timeout=30)
+        resp = requests.delete(f"{BASE_URL}{endpoint}", timeout=30)
         resp.raise_for_status()
         return True
-    except Exception as e:
-        st.error(f"Error: {e}")
+    except requests.exceptions.HTTPError as e:
+        st.error(_extract_user_message(e.response))
+    except Exception:
+        st.error("Something went wrong. Please try again in a moment.")
     return False
 
 

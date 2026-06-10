@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from backend.utils.gemini import call_gemini
+from backend.exceptions import EmptyInputError, InputTooLongError, GeminiResponseParseError
+import re
 
 router = APIRouter(prefix="/tailor", tags=["Resume Tailor"])
 
@@ -24,15 +26,24 @@ class TailorResponse(BaseModel):
 
 @router.post("/", response_model=TailorResponse)
 def tailor_resume(req: TailorRequest):
-    sections = []
-    if req.optimize_summary:
-        sections.append("SUMMARY")
-    if req.optimize_skills:
-        sections.append("SKILLS")
-    if req.optimize_experience:
-        sections.append("EXPERIENCE")
-    if req.optimize_projects:
-        sections.append("PROJECTS")
+    if not req.target_role.strip() or not req.resume.strip():
+        raise EmptyInputError(
+            user_message="Please provide both a target role and your resume content."
+        )
+    if len(req.resume) > 20_000:
+        raise InputTooLongError(
+            user_message=(
+                "Your resume is too long to process. "
+                "Try pasting just the key sections (summary, skills, experience)."
+            )
+        )
+
+    sections = [
+        req.optimize_summary and "SUMMARY",
+        req.optimize_skills and "SKILLS",
+        req.optimize_experience and "EXPERIENCE",
+        req.optimize_projects and "PROJECTS",
+    ]
 
     sections_str = ", ".join(sections) if sections else "SUMMARY, SKILLS, EXPERIENCE"
 
@@ -75,16 +86,28 @@ TIP_3: [quick win suggestion]
         m = re.search(pattern, raw)
         return m.group(1).strip() if m else ""
 
-    import re
 
     def extract_line(key: str) -> str:
         m = re.search(rf"{key}:\s*(.+)", raw)
         return m.group(1).strip() if m else ""
 
+    summary = extract_block("OPTIMIZED_SUMMARY")
+    skills = extract_block("OPTIMIZED_SKILLS")
+    experience = extract_block("OPTIMIZED_EXPERIENCE")
+    projects = extract_block("OPTIMIZED_PROJECTS")
+
+    if not any([summary, skills, experience, projects]):
+        raise GeminiResponseParseError(
+            user_message=(
+                "The AI couldn't parse the resume sections. "
+                "Try simplifying your resume text and submit again."
+            )
+        )
+
     return TailorResponse(
-        optimized_summary=extract_block("OPTIMIZED_SUMMARY"),
-        optimized_skills=extract_block("OPTIMIZED_SKILLS"),
-        optimized_experience=extract_block("OPTIMIZED_EXPERIENCE"),
-        optimized_projects=extract_block("OPTIMIZED_PROJECTS"),
+        optimized_summary=summary,
+        optimized_skills=skills,
+        optimized_experience=experience,
+        optimized_projects=projects,
         tips=[t for t in [extract_line("TIP_1"), extract_line("TIP_2"), extract_line("TIP_3")] if t],
     )

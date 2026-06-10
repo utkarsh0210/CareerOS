@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from backend.utils.gemini import call_gemini
+from backend.exceptions import EmptyInputError, InvalidInputError
+import re
 
 router = APIRouter(prefix="/network", tags=["Networking"])
 
@@ -30,6 +32,17 @@ class NetworkResponse(BaseModel):
 
 @router.post("/", response_model=NetworkResponse)
 def generate_network_message(req: NetworkRequest):
+    if not req.recipient_name.strip() or not req.company.strip() or not req.target_role.strip():
+        raise EmptyInputError(
+            user_message="Recipient name, company, and target role are all required to generate a message."
+        )
+    if req.message_type not in MSG_TYPES:
+        raise InvalidInputError(
+            user_message=(
+                f"'{req.message_type}' is not a valid message type. "
+                "Choose from: linkedin, recruiter, referral, followup."
+            )
+        )
     msg_type_desc = MSG_TYPES.get(req.message_type, MSG_TYPES["linkedin"])
 
     system = (
@@ -55,8 +68,6 @@ TIP_2: [one tip to improve response rate]
 """
 
     raw = call_gemini(prompt, system)
-
-    import re
 
     subject_m = re.search(r"SUBJECT:\s*(.+)", raw)
     subject = subject_m.group(1).strip() if subject_m else ""
